@@ -32,20 +32,14 @@ let package = Package(
     targets: [
         .target(
             name: "AsyncStreamed",
-            swiftSettings: [
-                // .unsafeFlags(["-strict-concurrency=complete"]),
-                // .enableUpcomingFeature("StrictConcurrency"),
-            ]
+            swiftSettings: []
         ),
         .testTarget(
             name: "AsyncStreamedTests",
             dependencies: [
                 "AsyncStreamed",
             ] + testingTargetDepencencies,
-            swiftSettings: [
-                // .unsafeFlags(["-strict-concurrency=complete"]),
-                // .enableUpcomingFeature("StrictConcurrency"),
-            ]
+            swiftSettings: []
         ),
     ]
 )

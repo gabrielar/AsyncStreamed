@@ -53,7 +53,7 @@ public struct AsyncStreamable<T: Sendable>: Sendable {
             observers.append(observer)
             lock.unlock()
         }
-        func remove(observer: Observer) {
+        func remove(observer: Observer?) {
             lock.lock()
             observers.removeAll { $0 === observer }
             lock.unlock()
@@ -82,8 +82,8 @@ public struct AsyncStreamable<T: Sendable>: Sendable {
         return AsyncStream { @Sendable (continuation: AsyncStream<T>.Continuation) -> Void in
             let observer = Observer(continuation: continuation)
             observerList.add(observer: observer)
-            continuation.onTermination = { @Sendable _ in
-                observerList.remove(observer: observer)
+            continuation.onTermination = { @Sendable [weak observerList, weak observer] _ in
+                observerList?.remove(observer: observer)
             }
         }
     }

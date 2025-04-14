@@ -57,5 +57,5 @@ This project is released under the MIT license. See [LICENSE](LICENSE) for detai
 [mit-badge]: https://img.shields.io/badge/License-MIT-blue.svg?style=flat
 [mit-url]: https://tldrlegal.com/license/mit-license
 
-[gh-actions-badge]: https://github.com/gabrielar/AsyncStreamed/workflows/Tests/badge.svg
-[gh-actions-url]: https://github.com/gabrielar/AsyncStreamed/actions?query=workflow%3ATests
+[gh-actions-badge]: https://github.com/gabrielar/AsyncStreamed/actions/workflows/build.yml/badge.svg?branch=main
+[gh-actions-url]: https://github.com/gabrielar/AsyncStreamed/actions?query=branch%3Amain++
