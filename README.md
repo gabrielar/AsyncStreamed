@@ -20,9 +20,7 @@ actor Streamer {
     @AsyncStreamable
     var streamedIn: Int = 0
     
-    /**
-    A task that updates `streamedIn` over time.
-    */
+    /// A task that updates `streamedIn` over time.
     func startIntStreaming() async {
         Task { [weak self] in
             while !Task.isCancelled {

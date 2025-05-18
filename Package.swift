@@ -7,7 +7,7 @@ import PackageDescription
 private let testingPackageDependencies: [PackageDescription.Package.Dependency]
 private let testingTargetDepencencies: [PackageDescription.Target.Dependency]
 #if os(Linux)
-testingPackageDependencies = [.package(url: "https://github.com/swiftlang/swift-testing", from: "6.0.0" )]
+testingPackageDependencies = [.package(url: "https://github.com/swiftlang/swift-testing", from: "6.1.0" )]
 testingTargetDepencencies = [.product(name: "Testing", package: "swift-testing")]
 #else
 testingPackageDependencies = []
@@ -28,16 +28,22 @@ let package = Package(
             name: "AsyncStreamed",
             targets: ["AsyncStreamed"]),
     ],
-    dependencies: [] + testingPackageDependencies,
+    dependencies: [
+        .package(url: "https://github.com/gabrielar/LeakCheck", branch: "main"),
+    ] + testingPackageDependencies,
     targets: [
         .target(
             name: "AsyncStreamed",
+            dependencies: [
+                .product(name: "LeakCheck", package: "LeakCheck"),
+            ],
             swiftSettings: []
         ),
         .testTarget(
             name: "AsyncStreamedTests",
             dependencies: [
                 "AsyncStreamed",
+                .product(name: "LeakCheck", package: "LeakCheck"),
             ] + testingTargetDepencencies,
             swiftSettings: []
         ),

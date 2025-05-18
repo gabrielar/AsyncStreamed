@@ -6,7 +6,12 @@
 //
 
 import Testing
+import LeakCheck
 @testable import AsyncStreamed
+
+
+let observerTag = "AsyncStreamed.AsyncStreamable.Observer"
+let observerListTag = "AsyncStreamed.AsyncStreamable.ObserverList"
 
 @Suite(
     "All  tests", .serialized, .timeLimit(.minutes(2))
@@ -36,88 +41,94 @@ extension AllTests {
             await mock.startIntStreaming(interval: .milliseconds(10))
             #expect(await task.value == [1, 2, 3, 4, 5])
         }
+        
+        @Test func testForMemoryLeaksWhenFeeingSource() async throws {
+            
+            AllocationLog.restart()
+            defer {
+                AllocationLog.stop()
+            }
+            
+            try #require(try AllocationLog.countInstances(tag: observerTag) == 0)
+            try #require(try AllocationLog.countInstances(tag: observerListTag) == 0)
 
-        #if MEMORY_LEAKS_TESTING
+            var mock: StreamableMock? = StreamableMock()
 
-            @Test func testForMemoryLeaksWhenFeeingSource() async throws {
+            #expect(try AllocationLog.countInstances(tag: observerTag) == 0)
+            #expect(try AllocationLog.countInstances(tag: observerListTag) > 0)
 
-                try #require(await __AsyncStreamable_Observer_objectCount == 0)
-                try #require(await __AsyncStreamable_ObserverList_objectCount == 0)
-
-                var mock: StreamableMock? = StreamableMock()
-
-                #expect(await __AsyncStreamable_Observer_objectCount == 0)
-                #expect(await __AsyncStreamable_ObserverList_objectCount > 0)
-
-                Task { [weak mock] in
-                    guard let stream = await mock?.$intWithStream else {
-                        Issue.record("Mock not found")
-                        return
-                    }
-                    for await element in stream {
-                        if element == 1000 {
-                            break
-                        }
+            Task { [weak mock] in
+                guard let stream = await mock?.$intWithStream else {
+                    Issue.record("Mock not found")
+                    return
+                }
+                for await element in stream {
+                    if element == 1000 {
+                        break
                     }
                 }
-
-                await mock?.startIntStreaming(interval: .milliseconds(5))
-
-                try await Task.sleep(for: .milliseconds(10))
-
-                #expect(await __AsyncStreamable_Observer_objectCount > 0)
-                #expect(await __AsyncStreamable_ObserverList_objectCount > 0)
-
-                mock = nil
-                try await Task.sleep(for: .milliseconds(10))
-
-                #expect(
-                    await __AsyncStreamable_Observer_objectCount == 0, "Observer object leaked.")
-                #expect(
-                    await __AsyncStreamable_ObserverList_objectCount == 0,
-                    "ObserverList object leaked.")
             }
 
-            @Test func testForMemoryLeaksWhenStoppingObservation() async throws {
+            await mock?.startIntStreaming(interval: .milliseconds(5))
 
-                try #require(await __AsyncStreamable_Observer_objectCount == 0)
-                try #require(await __AsyncStreamable_ObserverList_objectCount == 0)
+            try await Task.sleep(for: .milliseconds(10))
 
-                let mock: StreamableMock = StreamableMock()
+            #expect(try AllocationLog.countInstances(tag: observerTag) > 0)
+            #expect(try AllocationLog.countInstances(tag: observerListTag) > 0)
 
-                #expect(await __AsyncStreamable_Observer_objectCount == 0)
-                #expect(await __AsyncStreamable_ObserverList_objectCount > 0)
+            mock = nil
+            try await Task.sleep(for: .milliseconds(10))
 
-                let task = Task { [weak mock] in
-                    guard let stream = await mock?.$intWithStream else {
-                        Issue.record("Mock not found")
-                        return
-                    }
-                    for await element in stream {
-                        if element == 10 {
-                            break
-                        }
+            #expect(
+                try AllocationLog.countInstances(tag: observerTag) == 0, "Observer object leaked.")
+            #expect(
+                try AllocationLog.countInstances(tag: observerListTag) == 0,
+                "ObserverList object leaked.")
+        }
+
+        @Test func testForMemoryLeaksWhenStoppingObservation() async throws {
+
+            AllocationLog.restart()
+            defer {
+                AllocationLog.stop()
+            }
+            
+            try #require(try AllocationLog.countInstances(tag: observerTag) == 0)
+            try #require(try AllocationLog.countInstances(tag: observerListTag) == 0)
+
+            let mock: StreamableMock = StreamableMock()
+
+            #expect(try AllocationLog.countInstances(tag: observerTag) == 0)
+            #expect(try AllocationLog.countInstances(tag: observerListTag) > 0)
+
+            let task = Task { [weak mock] in
+                guard let stream = await mock?.$intWithStream else {
+                    Issue.record("Mock not found")
+                    return
+                }
+                for await element in stream {
+                    if element == 10 {
+                        break
                     }
                 }
-
-                await mock.startIntStreaming(interval: .milliseconds(5))
-
-                try await Task.sleep(for: .milliseconds(10))
-
-                #expect(await __AsyncStreamable_Observer_objectCount > 0)
-                #expect(await __AsyncStreamable_ObserverList_objectCount > 0)
-
-                await task.value
-
-                try await Task.sleep(for: .milliseconds(10))
-
-                #expect(
-                    await __AsyncStreamable_Observer_objectCount == 0, "Observer object leaked.")
-                #expect(
-                    await __AsyncStreamable_ObserverList_objectCount == 1,
-                    "ObserverList object leaked.")
             }
 
-        #endif
+            await mock.startIntStreaming(interval: .milliseconds(5))
+
+            try await Task.sleep(for: .milliseconds(10))
+
+            #expect(try AllocationLog.countInstances(tag: observerTag) > 0)
+            #expect(try AllocationLog.countInstances(tag: observerListTag) > 0)
+
+            await task.value
+
+            try await Task.sleep(for: .milliseconds(10))
+
+            #expect(
+                try AllocationLog.countInstances(tag: observerTag) == 0, "Observer object leaked.")
+            #expect(
+                try AllocationLog.countInstances(tag: observerListTag) == 1,
+                "ObserverList object leaked.")
+        }
     }
 }

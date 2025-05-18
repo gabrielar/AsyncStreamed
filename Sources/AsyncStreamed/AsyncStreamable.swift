@@ -6,25 +6,21 @@
 //
 
 import Foundation
+import LeakCheck
 
 @propertyWrapper
 public struct AsyncStreamable<T: Sendable>: Sendable {
     
+    @TrackedInstances(tag: "AsyncStreamed.AsyncStreamable.Observer")
     private final class Observer: Sendable {
         
         private let continuation: AsyncStream<T>.Continuation
         
         init(continuation: AsyncStream<T>.Continuation) {
             self.continuation = continuation
-            #if MEMORY_LEAKS_TESTING
-            __AsyncStreamable_Observer_objectCount_inc()
-            #endif
         }
         
         deinit {
-            #if MEMORY_LEAKS_TESTING
-            __AsyncStreamable_Observer_objectCount_dec()
-            #endif
             continuation.finish()
         }
         
@@ -33,21 +29,13 @@ public struct AsyncStreamable<T: Sendable>: Sendable {
         }
     }
     
+    @TrackedInstances(tag: "AsyncStreamed.AsyncStreamable.ObserverList")
     private final class ObserverList: @unchecked Sendable {
         
         private let lock = NSLock()
         
         private var observers: [Observer] = []
-        
-        #if MEMORY_LEAKS_TESTING
-        init() {
-            __AsyncStreamable_ObserverList_objectCount_inc()
-        }
-        deinit {
-            __AsyncStreamable_ObserverList_objectCount_dec()
-        }
-        #endif
-        
+                
         func add(observer: Observer) {
             lock.lock()
             observers.append(observer)
@@ -92,33 +80,3 @@ public struct AsyncStreamable<T: Sendable>: Sendable {
         self.value = wrappedValue
     }
 }
-
-#if MEMORY_LEAKS_TESTING
-
-@MainActor
-var __AsyncStreamable_Observer_objectCount: Int = 0
-func __AsyncStreamable_Observer_objectCount_inc() {
-    Task { @MainActor in
-        __AsyncStreamable_Observer_objectCount += 1
-    }
-}
-func __AsyncStreamable_Observer_objectCount_dec() {
-    Task { @MainActor in
-        __AsyncStreamable_Observer_objectCount -= 1
-    }
-}
-
-@MainActor
-var __AsyncStreamable_ObserverList_objectCount: Int = 0
-func __AsyncStreamable_ObserverList_objectCount_inc() {
-    Task { @MainActor in
-        __AsyncStreamable_ObserverList_objectCount += 1
-    }
-}
-func __AsyncStreamable_ObserverList_objectCount_dec() {
-    Task { @MainActor in
-        __AsyncStreamable_ObserverList_objectCount -= 1
-    }
-}
-
-#endif

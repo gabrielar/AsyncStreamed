@@ -34,6 +34,7 @@ extension Cancellable: Hashable {
 }
 
 public extension AsyncStream where Element : Sendable {
+    
     func sink(onElement: sending @escaping (Element) async -> Void) -> Cancellable {
         return Cancellable(task: Task {
             for await element in self {
